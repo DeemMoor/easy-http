@@ -91,4 +91,91 @@ class Utils
 
         return $handle;
     }
+
+    public static function copyToString(StreamInterface $stream, int $maxLen = -1): string
+    {
+        $buffer = '';
+
+        if ($maxLen === -1) {
+            while (!$stream->eof()) {
+                $buf = $stream->read(1048576);
+                if ($buf === '') {
+                    break;
+                }
+                $buffer .= $buf;
+            }
+
+            return $buffer;
+        }
+
+        $len = 0;
+        while (!$stream->eof() && $len < $maxLen) {
+            $buf = $stream->read($maxLen - $len);
+            if ($buf === '') {
+                break;
+            }
+            $buffer .= $buf;
+            $len = strlen($buffer);
+        }
+
+        return $buffer;
+    }
+
+    public static function tryGetContents($stream): string
+    {
+        $ex = null;
+        set_error_handler(static function (int $errno, string $errstr) use (&$ex): bool {
+            $ex = new \RuntimeException(sprintf(
+                'Unable to read stream contents: %s',
+                $errstr
+            ));
+
+            return true;
+        });
+
+        try {
+            $contents = stream_get_contents($stream);
+
+            if ($contents === false) {
+                $ex = new \RuntimeException('Unable to read stream contents');
+            }
+        } catch (\Throwable $e) {
+            $ex = new \RuntimeException(sprintf(
+                'Unable to read stream contents: %s',
+                $e->getMessage()
+            ), 0, $e);
+        }
+
+        restore_error_handler();
+
+        if ($ex) {
+            throw $ex;
+        }
+
+        return $contents;
+    }
+
+    public static function copyToStream(StreamInterface $source, StreamInterface $dest, int $maxLen = -1): void
+    {
+        $bufferSize = 8192;
+
+        if ($maxLen === -1) {
+            while (!$source->eof()) {
+                if (!$dest->write($source->read($bufferSize))) {
+                    break;
+                }
+            }
+        } else {
+            $remaining = $maxLen;
+            while ($remaining > 0 && !$source->eof()) {
+                $buf = $source->read(min($bufferSize, $remaining));
+                $len = strlen($buf);
+                if (!$len) {
+                    break;
+                }
+                $remaining -= $len;
+                $dest->write($buf);
+            }
+        }
+    }
 }

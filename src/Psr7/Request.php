@@ -14,15 +14,42 @@ class Request implements RequestInterface
 
     private array $headerNames = [];
 
-    private string $protocol = '1.1';
+    private string $protocol;
 
-    private StreamInterface $stream;
+    private ?StreamInterface $stream;
 
     private UriInterface $uri;
 
     private ?string $requestTarget;
 
     private string $method;
+
+    public function __construct(
+        string $method,
+               $uri,
+        array $headers = [],
+               $body = null,
+        string $version = '1.1'
+    ) {
+        $this->assertMethod($method);
+        if (!($uri instanceof UriInterface)) {
+            $uri = new Uri($uri);
+        }
+
+        $this->method = strtoupper($method);
+        $this->uri = $uri;
+        $this->setHeaders($headers);
+        $this->protocol = $version;
+
+        if (!isset($this->headerNames['host'])) {
+            $this->updateHostFromUri();
+        }
+
+        if ($body !== '' && $body !== null) {
+            $this->stream = Utils::streamFor($body);
+        }
+    }
+
 
     public function getProtocolVersion(): string
     {
@@ -121,11 +148,7 @@ class Request implements RequestInterface
 
     public function getBody(): StreamInterface
     {
-        if (!$this->stream) {
-            $this->stream = Utils::streamFor('');
-        }
-
-        return $this->stream;
+        return $this->stream ??= Utils::streamFor('');
     }
 
     public function withBody(StreamInterface $body): MessageInterface
@@ -288,5 +311,23 @@ class Request implements RequestInterface
         }
 
         $this->headers = [$header => [$host]] + $this->headers;
+    }
+
+    private function setHeaders(array $headers): void
+    {
+        $this->headerNames = $this->headers = [];
+        foreach ($headers as $header => $value) {
+            $header = (string) $header;
+            $this->assertHeader($header);
+            $value = $this->normalizeHeaderValue($value);
+            $normalized = strtolower($header);
+            if (isset($this->headerNames[$normalized])) {
+                $header = $this->headerNames[$normalized];
+                $this->headers[$header] = array_merge($this->headers[$header], $value);
+            } else {
+                $this->headerNames[$normalized] = $header;
+                $this->headers[$header] = $value;
+            }
+        }
     }
 }
