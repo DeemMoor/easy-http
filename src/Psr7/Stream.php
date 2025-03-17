@@ -12,7 +12,7 @@ class Stream implements StreamInterface
     /** @var resource */
     private $stream;
 
-    private ?int $size;
+    private ?int $size = null;
 
     private bool $seekable;
 
@@ -76,7 +76,7 @@ class Stream implements StreamInterface
         }
     }
 
-    public function detach(): null
+    public function detach()
     {
         if (!isset($this->stream)) {
             return null;

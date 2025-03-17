@@ -41,7 +41,7 @@ class Uri implements UriInterface, \JsonSerializable
 
     private string $fragment = '';
 
-    private ?string $composedComponents;
+    private ?string $composedComponents = null;
 
     public function __construct(string $uri = '')
     {
@@ -293,7 +293,7 @@ class Uri implements UriInterface, \JsonSerializable
         return $this->__toString();
     }
 
-    private function applyParts(null $parts): void
+    private function applyParts($parts): void
     {
         $this->scheme = isset($parts['scheme'])
             ? $this->filterScheme($parts['scheme'])
@@ -423,5 +423,10 @@ class Uri implements UriInterface, \JsonSerializable
             [$this, 'rawurlencodeMatchZero'],
             $query
         );
+    }
+
+    private function rawurlencodeMatchZero(array $match): string
+    {
+        return rawurlencode($match[0]);
     }
 }
