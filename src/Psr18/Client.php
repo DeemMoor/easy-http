@@ -23,10 +23,9 @@ class Client implements ClientInterface
      */
     public function sendRequest(RequestInterface $request): ResponseInterface
     {
-//        $ch = curl_init($request->getUri()->getScheme().'://'.$request->getUri()->getHost().$request->getUri()->getPath());
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, (string) $request->getUri());
-//        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $request->getMethod());
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $request->getMethod());
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_HEADER, false);
